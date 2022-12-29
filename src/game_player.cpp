@@ -47,6 +47,12 @@ Game_Player::Game_Player(): Game_PlayerBase(Player)
 	SetDirection(lcf::rpg::EventPage::Direction_down);
 	SetMoveSpeed(4);
 	SetAnimationType(lcf::rpg::EventPage::AnimType_non_continuous);
+	// note(jae): 2022-12-29
+	// Temporary hack to force pixel movement mode at start-up.
+	//
+	// If this gets polished enough, this should be a feature flag or a command
+	// should be callable to toggle this on/off
+	moveMode = MoveModePixelAllDirections;
 }
 
 void Game_Player::SetSaveData(lcf::rpg::SavePartyLocation save)
@@ -305,7 +311,9 @@ void Game_Player::UpdateNextMovementAction() {
 	}
 
 	int move_dir = -1;
-	switch (Input::dir4) {
+	switch (moveMode) {
+	case MoveModeDefault:
+		switch (Input::dir4) {
 		case 2:
 			move_dir = Down;
 			break;
@@ -318,6 +326,39 @@ void Game_Player::UpdateNextMovementAction() {
 		case 8:
 			move_dir = Up;
 			break;
+		}
+		break;
+	case MoveModePixelAllDirections:
+		switch (Input::dir8) {
+		case Input::Direction::DOWN:
+			move_dir = Down;
+			break;
+		case Input::Direction::LEFT:
+			move_dir = Left;
+			break;
+		case Input::Direction::RIGHT:
+			move_dir = Right;
+			break;
+		case Input::Direction::UP:
+			move_dir = Up;
+			break;
+		case Input::Direction::UPRIGHT:
+			move_dir = UpRight;
+			break;
+		case Input::Direction::DOWNRIGHT:
+			move_dir = DownRight;
+			break;
+		case Input::Direction::UPLEFT:
+			move_dir = UpLeft;
+			break;
+		case Input::Direction::DOWNLEFT:
+			move_dir = DownLeft;
+			break;
+		}
+		break;
+	default:
+		Output::Warning("Player MoveMode: Invalid mode move {}", moveMode);
+		break;
 	}
 	if (move_dir >= 0) {
 		SetThrough((Player::debug_flag && Input::IsPressed(Input::DEBUG_THROUGH)) || data()->move_route_through);
@@ -359,8 +400,27 @@ void Game_Player::UpdateMovement(int amount) {
 	}
 }
 
+int Game_Player::GetScreenX(bool apply_shift) const {
+	return Game_Character::GetScreenX(apply_shift) + subx;
+}
+
+int Game_Player::GetScreenY(bool apply_shift, bool apply_jump) const {
+	return Game_Character::GetScreenY(apply_shift, apply_jump) + suby;
+}
+
 void Game_Player::Update() {
 	Game_Character::Update();
+	if (isMovingInPixelAllDir) {
+		// note(jae): 2022-12-29
+		// Hack to move the camera and possibly call CheckEventTriggerHere.
+		// Likely needs adjustment/work.
+		//
+		// Camera is currently janky, likely due to "amount" not mapping to
+		// how far the player is actually moving.
+		isMovingInPixelAllDir = false;
+		int amount = 1 << (1 + GetMoveSpeed());
+		this->UpdateMovement(amount);
+	}
 
 	if (IsStopping()) {
 		if (data()->boarding) {
@@ -616,7 +676,17 @@ bool Game_Player::Move(int dir) {
 		return true;
 	}
 
-	Game_Character::Move(dir);
+	switch (moveMode) {
+	case MoveModeDefault:
+		Game_Character::Move(dir);
+		break;
+	case MoveModePixelAllDirections: {
+		MovePixelAllDirections(dir);
+		break;
+	}
+	default:
+		Output::Warning("Player MoveMode: Invalid mode move {}", moveMode);
+	}
 	if (IsStopping()) {
 		return false;
 	}
@@ -826,3 +896,117 @@ void Game_Player::UpdatePan() {
 	data()->pan_current_y -= dy;
 }
 
+void Game_Player::MovePixelAllDirections(int dir) {
+	SetDirection(dir);
+	UpdateFacing();
+
+	// note(jae): 2022-12-29
+	// This needs work to test collisions per pixel so that a player
+	// can end up bumping right up against a wall without going through it.
+	const float move_speed = 2;
+	float dx_sub = 0;
+	float dy_sub = 0;
+	switch (dir) {
+	case Right:		dx_sub = move_speed; break;
+	case Left:		dx_sub = -move_speed; break;
+	case Down:		dy_sub = move_speed; break;
+	case Up:		dy_sub = -move_speed; break;
+	case DownRight: {
+		const auto dirInDeg = 45.0f;
+		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		break;
+	}
+	case DownLeft: {
+		const auto dirInDeg = 135.0f;
+		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		break;
+	}
+	case UpLeft: {
+		const auto dirInDeg = 225.0f;
+		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		break;
+	}
+	case UpRight: {
+		const auto dirInDeg = 315.0f;
+		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		break;
+	}
+	}
+
+	const auto x = GetX();
+	const auto y = GetY();
+
+	const float next_screen_x = ((x * 16) + subx + dx_sub) / 16;
+	const float next_screen_y = ((y * 16) + suby + dy_sub) / 16;
+	const int next_x = floor(next_screen_x);
+	const int next_y = floor(next_screen_y);
+	const int next_xx = ceil(next_screen_x);
+	const int next_yy = ceil(next_screen_y);
+
+	const auto dx = Utils::Signum(dx_sub);
+	const auto dy = Utils::Signum(dy_sub);
+
+	bool move_success_x = false;
+	bool move_success_y = false;
+	if (dx && dy) {
+		// For diagonal movement, RPG_RT trys vert -> horiz and if that fails, then horiz -> vert.
+		bool move_success = (MakeWay(x, y, x, next_y) || MakeWay(x, y, x, next_yy)) && (MakeWay(x, next_y, next_x, next_y) || MakeWay(x, next_yy, next_xx, next_yy))
+			|| (MakeWay(x, y, next_x, y) || MakeWay(x, y, next_xx, y)) && (MakeWay(next_x, y, next_x, next_y) || MakeWay(next_xx, y, next_xx, next_yy));
+		move_success_x = move_success;
+		move_success_y = move_success;
+	}
+	else if (dx) {
+		if (x == next_x && x == next_xx) {
+			move_success_x = true;
+		} else {
+			if (x != next_x) {
+				move_success_x = MakeWay(x, y, next_x, y);
+			}
+			if (x != next_xx) {
+				move_success_x = MakeWay(x, y, next_xx, y);
+			}
+		}
+	}
+	else if (dy) {
+		if (y == next_y && y == next_yy) {
+			move_success_y = true;
+		} else {
+			if (y != next_y) {
+				move_success_y = MakeWay(x, y, x, next_y);
+			}
+			if (y != next_yy) {
+				move_success_y = MakeWay(x, y, x, next_yy);
+			}
+		}
+	}
+	if (!move_success_x && !move_success_y) {
+		return;
+	}
+	isMovingInPixelAllDir = true;
+	if (move_success_x) {
+		subx += dx_sub;
+		if (subx <= -16) {
+			subx += 16;
+			SetX(Game_Map::RoundX(x - 1));
+		}
+		if (subx >= 16) {
+			subx -= 16;
+			SetX(Game_Map::RoundX(x + 1));
+		}
+	}
+	if (move_success_y) {
+		suby += dy_sub;
+		if (suby <= -16) {
+			suby += 16;
+			SetY(Game_Map::RoundY(y - 1));
+		}
+		if (suby >= 16) {
+			suby -= 16;
+			SetY(Game_Map::RoundY(y + 1));
+		}
+	}
+}

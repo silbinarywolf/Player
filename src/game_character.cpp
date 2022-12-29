@@ -212,7 +212,8 @@ void Game_Character::UpdateAnimation() {
 	if (IsContinuous()
 			|| GetStopCount() == 0
 			|| data()->anim_frame == lcf::rpg::EventPage::Frame_left || data()->anim_frame == lcf::rpg::EventPage::Frame_right
-			|| GetAnimCount() < stationary_limit - 1) {
+			|| GetAnimCount() < stationary_limit - 1
+			|| isMovingInPixelAllDir) {
 		IncAnimCount();
 	}
 
@@ -474,11 +475,10 @@ bool Game_Character::Move(int dir) {
 		return true;
 	}
 
-	bool move_success = false;
-
 	SetDirection(dir);
 	UpdateFacing();
 
+	bool move_success = false;
 	const auto x = GetX();
 	const auto y = GetY();
 	const auto dx = GetDxFromDirection(dir);
@@ -487,10 +487,12 @@ bool Game_Character::Move(int dir) {
 	if (dx && dy) {
 		// For diagonal movement, RPG_RT trys vert -> horiz and if that fails, then horiz -> vert.
 		move_success = (MakeWay(x, y, x, y + dy) && MakeWay(x, y + dy, x + dx, y + dy))
-					|| (MakeWay(x, y, x + dx, y) && MakeWay(x + dx, y, x + dx, y + dy));
-	} else if (dx) {
+			|| (MakeWay(x, y, x + dx, y) && MakeWay(x + dx, y, x + dx, y + dy));
+	}
+	else if (dx) {
 		move_success = MakeWay(x, y, x + dx, y);
-	} else if (dy) {
+	}
+	else if (dy) {
 		move_success = MakeWay(x, y, x, y + dy);
 	}
 
@@ -500,7 +502,6 @@ bool Game_Character::Move(int dir) {
 
 	const auto new_x = Game_Map::RoundX(x + dx);
 	const auto new_y = Game_Map::RoundY(y + dy);
-
 	SetX(new_x);
 	SetY(new_y);
 	SetRemainingStep(SCREEN_TILE_SIZE);

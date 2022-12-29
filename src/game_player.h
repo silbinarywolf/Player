@@ -127,6 +127,16 @@ public:
 		PanLeft
 	};
 
+	/**
+	 * Define how the player moves in-engine
+	 */
+	enum MoveMode {
+		MoveModeDefault, // Rm2k/3 behaviour
+		MoveModePixelAllDirections
+	};
+
+	int GetScreenX(bool apply_shift = false) const;
+	int GetScreenY(bool apply_shift = false, bool apply_jump = true) const;
 	bool IsPanActive() const;
 	bool IsPanLocked() const;
 	int GetPanX() const;
@@ -159,6 +169,12 @@ private:
 	bool GetOffVehicle();
 	bool UpdateAirship();
 	void UpdateVehicleActions();
+
+	MoveMode moveMode = MoveModeDefault;
+
+	void MovePixelAllDirections(int dir); // for pixel-movement
+	float subx = 0; // for pixel-movement
+	float suby = 0; // for pixel-movement
 
 	TeleportTarget teleport_target;
 	int last_encounter_idx = 0;
