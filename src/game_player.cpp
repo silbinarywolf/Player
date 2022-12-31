@@ -950,52 +950,67 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
 	Output::Warning("Player VelXY: {},{}", dx_sub, dy_sub);
 	
-	bool move_success_x = (dx_sub == 0);
-	bool move_success_y = (dy_sub == 0);
+	/* bool move_success_x = (dx_sub == 0);
+	bool move_success_y = (dy_sub == 0); */
+	int x_from = x;
+	int x_to = x;
 	if (dx_sub < 0) {
-		const auto x_from = floor(screen_x);
-		const auto x_to = floor(next_screen_x);
-		if (x_from == x_to) {
-			// If moving within tile
-			move_success_x = true;
-		} else {
-			move_success_x = MakeWay(x_from, y, x_to, y);
-		}
+		x_from = floor(screen_x);
+	 	x_to = floor(next_screen_x);
 	}
 	if (dx_sub > 0) {
-		const auto x_from = ceil(screen_x);
-		const auto x_to = ceil(next_screen_x);
-		if (x_from == x_to) {
-			// If moving within tile
-			move_success_x = true;
-		}
-		else {
-			move_success_x = MakeWay(x_from, y, x_to, y);
-		}
+		x_from = ceil(screen_x);
+		x_to = ceil(next_screen_x);
 	}
+	int y_from = y;
+	int y_to = y;
 	if (dy_sub < 0) {
-		const auto y_from = floor(screen_y);
-		const auto y_to = floor(next_screen_y);
-		if (y_from == y_to) {
-			// If moving within tile
-			move_success_y = true;
-		} else {
-			move_success_y = MakeWay(x, y_from, x, y_to);
-		}
+		y_from = floor(screen_y);
+		y_to = floor(next_screen_y);
 	}
 	if (dy_sub > 0) {
-		const auto y_from = ceil(screen_y);
-		const auto y_to = ceil(next_screen_y);
-		if (y_from == y_to) {
-			// If moving within tile
-			move_success_y = true;
+		y_from = ceil(screen_y);
+		y_to = ceil(next_screen_y);
+	}
+	bool move_success = false;
+	if (dx_sub != 0 && dy_sub != 0) {
+		if (x_from == x_to && y_from == y_to) {
+			// If moving within tile for both x/y
+			move_success = true;
+		} else if (x_from == x_to) {
+			// If x is only moving within tile, then only check Y
+			move_success = MakeWay(x_from, y_from, x_from, y_to);
+		} else if (y_from == y_to) {
+			// If y is only moving within tile, then only check x
+			move_success = MakeWay(x_from, y_from, x_to, y_from);
+		} else {
+			// For diagonal movement, try vert -> horiz -> diagonal check
+			move_success = MakeWay(x_from, y_from, x_to, y_to) && MakeWay(x_from, y_from, x_to, y_to) && MakeWay(x_from, y_from, x_to, y_to);
 		}
-		else {
-			move_success_y = MakeWay(x, y_from, x, y_to);
+	} else if (dx_sub != 0) {
+		if (x_from == x_to) {
+			// If moving within tile for x
+			move_success = true;
+		} else {
+			move_success = MakeWay(x_from, y_from, x_to, y_from);
+		}
+	} else if (dy_sub != 0) {
+		if (y_from == y_to) {
+			// If moving within tile for y
+			move_success = true;
+		} else {
+			move_success = MakeWay(x_from, y_from, x_from, y_to);
 		}
 	}
+	/* if (y_from == y_to) {
+		// If moving within tile
+		move_success_y = true;
+	}
+	else {
+		move_success_y = MakeWay(x, y_from, x, y_to);
+	} */
 
-	if (!move_success_x || !move_success_y) {
+	if (!move_success) {
 		return;
 	}
 
