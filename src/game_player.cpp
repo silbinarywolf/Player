@@ -940,9 +940,70 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	const auto x = GetX();
 	const auto y = GetY();
 
+	const auto screen_x = ((x * 16) + subx) / 16;
+	const auto screen_y = ((y * 16) + suby) / 16;
+
 	const float next_screen_x = ((x * 16) + subx + dx_sub) / 16;
 	const float next_screen_y = ((y * 16) + suby + dy_sub) / 16;
-	const int next_x = floor(next_screen_x);
+
+	Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
+	Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
+	Output::Warning("Player VelXY: {},{}", dx_sub, dy_sub);
+	
+	bool move_success_x = (dx_sub == 0);
+	bool move_success_y = (dy_sub == 0);
+	if (dx_sub < 0) {
+		const auto x_from = floor(screen_x);
+		const auto x_to = floor(next_screen_x);
+		if (x_from == x_to) {
+			// If moving within tile
+			move_success_x = true;
+		} else {
+			move_success_x = MakeWay(x_from, y, x_to, y);
+		}
+	}
+	if (dx_sub > 0) {
+		const auto x_from = ceil(screen_x);
+		const auto x_to = ceil(next_screen_x);
+		if (x_from == x_to) {
+			// If moving within tile
+			move_success_x = true;
+		}
+		else {
+			move_success_x = MakeWay(x_from, y, x_to, y);
+		}
+	}
+	if (dy_sub < 0) {
+		const auto y_from = floor(screen_y);
+		const auto y_to = floor(next_screen_y);
+		if (y_from == y_to) {
+			// If moving within tile
+			move_success_y = true;
+		} else {
+			move_success_y = MakeWay(x, y_from, x, y_to);
+		}
+	}
+	if (dy_sub > 0) {
+		const auto y_from = ceil(screen_y);
+		const auto y_to = ceil(next_screen_y);
+		if (y_from == y_to) {
+			// If moving within tile
+			move_success_y = true;
+		}
+		else {
+			move_success_y = MakeWay(x, y_from, x, y_to);
+		}
+	}
+
+	if (!move_success_x || !move_success_y) {
+		return;
+	}
+
+	/* if (dx_sub && dy_sub) {
+		MakeWay(x, y, x, next_y)
+	} */
+
+	/* const int next_x = floor(next_screen_x);
 	const int next_y = floor(next_screen_y);
 	const int next_xx = ceil(next_screen_x);
 	const int next_yy = ceil(next_screen_y);
@@ -985,9 +1046,9 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	}
 	if (!move_success_x && !move_success_y) {
 		return;
-	}
+	} */
 	isMovingInPixelAllDir = true;
-	if (move_success_x) {
+	if (dx_sub != 0) {
 		subx += dx_sub;
 		if (subx <= -16) {
 			subx += 16;
@@ -998,7 +1059,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			SetX(Game_Map::RoundX(x + 1));
 		}
 	}
-	if (move_success_y) {
+	if (dy_sub != 0) {
 		suby += dy_sub;
 		if (suby <= -16) {
 			suby += 16;
