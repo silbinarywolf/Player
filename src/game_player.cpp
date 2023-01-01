@@ -949,10 +949,87 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
 	Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
 	Output::Warning("Player VelXY: {},{}", dx_sub, dy_sub);
+
+	int x_from = x;
+	int x_to = x;
+	if (dx_sub < 0) {
+		x_from = floor(screen_x);
+	 	x_to = floor(next_screen_x);
+	}
+	if (dx_sub > 0) {
+		x_from = ceil(screen_x);
+		x_to = ceil(next_screen_x);
+	}
+	int y_from = y;
+	int y_to = y;
+	if (dy_sub < 0) {
+		y_from = floor(screen_y);
+		y_to = floor(next_screen_y);
+	}
+
+	const int x1_from = floor(screen_x);
+	const int x2_from = ceil(screen_x);
+	const int x1_to = floor(next_screen_x);
+	const int x2_to = ceil(next_screen_x);
+
+	const int y1_from = floor(screen_y);
+	const int y2_from = ceil(screen_y);
+	const int y1_to = floor(next_screen_y);
+	const int y2_to = ceil(next_screen_y);
+
+	int move_success = 0;
+	int move_success_total = 0;
+	if (dx_sub != 0 && dy_sub != 0) {
+		// temporarily disable diagonal move
+		return;
+	}
+	if (dx_sub != 0) {
+		if (x_from == x_to) {
+			// If moving within tile, no tile check needed
+			move_success++;
+			move_success_total++;
+		} else {
+			if (y1_from <= y2_from) {
+				for (int y = y1_from; y <= y2_from; y++) {
+					move_success += MakeWay(x_from, y, x_to, y);
+					move_success_total++;
+				}
+			}
+			if (y1_from > y2_from) {
+				for (int y = y1_from; y >= y2_from; y--) {
+					move_success += MakeWay(x_from, y, x_to, y);
+					move_success_total++;
+				}
+			}
+		}
+	}
+	if (dy_sub != 0) {
+		if (y_from == y_to) {
+			// If moving within tile, no tile check needed
+			move_success++;
+			move_success_total++;
+		} else {
+			if (x1_from <= x2_from) {
+				for (int x = x1_from; x <= x2_from; x++) {
+					move_success += MakeWay(x, y_from, x, y_to);
+					move_success_total++;
+				}
+			}
+			if (x1_from > x2_from) {
+				for (int x = x1_from; x >= x2_from; x--) {
+					move_success += MakeWay(x, y_from, x, y_to);
+					move_success_total++;
+				}
+			}
+		}
+	}
+
+	//const int y1_from = floor(screen_y);
+	//const int y2_from = ceil(screen_y);
 	
 	/* bool move_success_x = (dx_sub == 0);
 	bool move_success_y = (dy_sub == 0); */
-	int x_from = x;
+	/* int x_from = x;
 	int x_to = x;
 	if (dx_sub < 0) {
 		x_from = floor(screen_x);
@@ -1001,67 +1078,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		} else {
 			move_success = MakeWay(x_from, y_from, x_from, y_to);
 		}
-	}
-	/* if (y_from == y_to) {
-		// If moving within tile
-		move_success_y = true;
-	}
-	else {
-		move_success_y = MakeWay(x, y_from, x, y_to);
 	} */
 
-	if (!move_success) {
+	if (move_success == 0 || move_success != move_success_total) {
 		return;
 	}
-
-	/* if (dx_sub && dy_sub) {
-		MakeWay(x, y, x, next_y)
-	} */
-
-	/* const int next_x = floor(next_screen_x);
-	const int next_y = floor(next_screen_y);
-	const int next_xx = ceil(next_screen_x);
-	const int next_yy = ceil(next_screen_y);
-
-	const auto dx = Utils::Signum(dx_sub);
-	const auto dy = Utils::Signum(dy_sub);
-
-	bool move_success_x = false;
-	bool move_success_y = false;
-	if (dx && dy) {
-		// For diagonal movement, RPG_RT trys vert -> horiz and if that fails, then horiz -> vert.
-		bool move_success = (MakeWay(x, y, x, next_y) || MakeWay(x, y, x, next_yy)) && (MakeWay(x, next_y, next_x, next_y) || MakeWay(x, next_yy, next_xx, next_yy))
-			|| (MakeWay(x, y, next_x, y) || MakeWay(x, y, next_xx, y)) && (MakeWay(next_x, y, next_x, next_y) || MakeWay(next_xx, y, next_xx, next_yy));
-		move_success_x = move_success;
-		move_success_y = move_success;
-	}
-	else if (dx) {
-		if (x == next_x && x == next_xx) {
-			move_success_x = true;
-		} else {
-			if (x != next_x) {
-				move_success_x = MakeWay(x, y, next_x, y);
-			}
-			if (x != next_xx) {
-				move_success_x = MakeWay(x, y, next_xx, y);
-			}
-		}
-	}
-	else if (dy) {
-		if (y == next_y && y == next_yy) {
-			move_success_y = true;
-		} else {
-			if (y != next_y) {
-				move_success_y = MakeWay(x, y, x, next_y);
-			}
-			if (y != next_yy) {
-				move_success_y = MakeWay(x, y, x, next_yy);
-			}
-		}
-	}
-	if (!move_success_x && !move_success_y) {
-		return;
-	} */
 	isMovingInPixelAllDir = true;
 	if (dx_sub != 0) {
 		subx += dx_sub;
