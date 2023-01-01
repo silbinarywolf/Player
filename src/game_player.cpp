@@ -969,7 +969,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	int x_to = x;
 	if (dx_sub < 0) {
 		x_from = floor(screen_x);
-	 	x_to = floor(next_screen_x);
+		x_to = floor(next_screen_x);
 	}
 	if (dx_sub > 0) {
 		x_from = ceil(screen_x);
@@ -1040,15 +1040,24 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			}
 		}
 	}
+	// Check diagonal tile if:
+	// - moving diagonally
+	// - is moving between tiles
+	// - can successfully move in both X and Y dimensions (this stops sticking to walls)
 	if (dx_sub != 0 && dy_sub != 0 &&
-		x_from != x_to && y_from != y_to) {
-		// Handle diagonal tile
+		x_from != x_to && y_from != y_to &&
+		(move_success_x > 0 && move_success_x == move_success_x_total) && (move_success_y > 0 && move_success_y == move_success_y_total)) {
 		int move_success = MakeWay(x_from, y_from, x_to, y_to);
 		move_success_x += move_success;
 		move_success_x_total++;
-		
+
 		move_success_y += move_success;
 		move_success_y_total++;
+	}
+
+	if ((move_success_x == 0 || move_success_x != move_success_x_total) &&
+		move_success_y == 0 || move_success_y != move_success_y_total) {
+		return;
 	}
 
 	if (move_success_x > 0 && move_success_x == move_success_x_total) {
