@@ -994,6 +994,9 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			move_success_x++;
 			move_success_x_total++;
 		} else {
+			// Entity can consume up to 2 Y-coord tiles at once (4 tiles all up), 
+			// so when moving left/right we need to check if we can make way
+			// from two Y positions.
 			const int y1_from = floor(screen_y);
 			const int y2_from = ceil(screen_y);
 			const int y1_to = floor(next_screen_y);
@@ -1021,6 +1024,9 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			move_success_y++;
 			move_success_y_total++;
 		} else {
+			// Entity can consume up to 2 X-coord tiles at once (4 tiles all up), 
+			// so when moving up/down we need to check if we can make way
+			// from two X positions.
 			const int x1_from = floor(screen_x);
 			const int x2_from = ceil(screen_x);
 			const int x1_to = floor(next_screen_x);
@@ -1056,11 +1062,10 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	}
 
 	if ((move_success_x == 0 || move_success_x != move_success_x_total) &&
-		move_success_y == 0 || move_success_y != move_success_y_total) {
-		// If the next movement would have brought the entity to
-		// the next tile if no collision, then snap entity to current
-		// tile.
-		// ie. Hug them right up against the wall
+		(move_success_y == 0 || move_success_y != move_success_y_total)) {
+		// If currently partially in a tile and hit collision,
+		// move to be completely in.
+		// ie. You can hug the top of the map/room and navigate between 2 tiles with 1 tile in-between
 		if (subx + dx_sub <= -16) {
 			subx = 0;
 			SetX(Game_Map::RoundX(x - 1));
@@ -1076,6 +1081,14 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		if (suby + dy_sub >= 16) {
 			suby = 0;
 			SetY(Game_Map::RoundY(y + 1));
+		}
+		// If in any sub-pixel position that didn't meet above conditions
+		// just zero it out.
+		if (dx_sub != 0) {
+			subx = 0;
+		}
+		if (dy_sub != 0) {
+			suby = 0;
 		}
 		return;
 	}
