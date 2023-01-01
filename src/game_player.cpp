@@ -996,110 +996,62 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	const int y1_to = floor(next_screen_y);
 	const int y2_to = ceil(next_screen_y);
 
-	int move_success = 0;
-	int move_success_total = 0;
+	int move_success_x = 0;
+	int move_success_x_total = 0;
 	if (dx_sub != 0) {
 		if (x_from == x_to) {
 			// If moving within tile, no tile check needed
-			move_success++;
-			move_success_total++;
+			move_success_x++;
+			move_success_x_total++;
 		} else {
 			if (y1_from <= y2_from) {
 				for (int y = y1_from; y <= y2_from; y++) {
-					move_success += MakeWay(x_from, y, x_to, y);
-					move_success_total++;
+					move_success_x += MakeWay(x_from, y, x_to, y);
+					move_success_x_total++;
 				}
 			}
 			if (y1_from > y2_from) {
 				for (int y = y1_from; y >= y2_from; y--) {
-					move_success += MakeWay(x_from, y, x_to, y);
-					move_success_total++;
+					move_success_x += MakeWay(x_from, y, x_to, y);
+					move_success_x_total++;
 				}
 			}
 		}
 	}
+	int move_success_y = 0;
+	int move_success_y_total = 0;
 	if (dy_sub != 0) {
 		if (y_from == y_to) {
 			// If moving within tile, no tile check needed
-			move_success++;
-			move_success_total++;
+			move_success_y++;
+			move_success_y_total++;
 		} else {
 			if (x1_from <= x2_from) {
 				for (int x = x1_from; x <= x2_from; x++) {
-					move_success += MakeWay(x, y_from, x, y_to);
-					move_success_total++;
+					move_success_y += MakeWay(x, y_from, x, y_to);
+					move_success_y_total++;
 				}
 			}
 			if (x1_from > x2_from) {
 				for (int x = x1_from; x >= x2_from; x--) {
-					move_success += MakeWay(x, y_from, x, y_to);
-					move_success_total++;
+					move_success_y += MakeWay(x, y_from, x, y_to);
+					move_success_y_total++;
 				}
 			}
 		}
 	}
+	if (dx_sub != 0 && dy_sub != 0 &&
+		x_from != x_to && y_from != y_to) {
+		// Handle diagonal tile
+		int move_success = MakeWay(x_from, y_from, x_to, y_to);
+		move_success_x += move_success;
+		move_success_x_total++;
+		
+		move_success_y += move_success;
+		move_success_y_total++;
+	}
 
-	//const int y1_from = floor(screen_y);
-	//const int y2_from = ceil(screen_y);
-	
-	/* bool move_success_x = (dx_sub == 0);
-	bool move_success_y = (dy_sub == 0); */
-	/* int x_from = x;
-	int x_to = x;
-	if (dx_sub < 0) {
-		x_from = floor(screen_x);
-	 	x_to = floor(next_screen_x);
-	}
-	if (dx_sub > 0) {
-		x_from = ceil(screen_x);
-		x_to = ceil(next_screen_x);
-	}
-	int y_from = y;
-	int y_to = y;
-	if (dy_sub < 0) {
-		y_from = floor(screen_y);
-		y_to = floor(next_screen_y);
-	}
-	if (dy_sub > 0) {
-		y_from = ceil(screen_y);
-		y_to = ceil(next_screen_y);
-	}
-	bool move_success = false;
-	if (dx_sub != 0 && dy_sub != 0) {
-		if (x_from == x_to && y_from == y_to) {
-			// If moving within tile for both x/y
-			move_success = true;
-		} else if (x_from == x_to) {
-			// If x is only moving within tile, then only check Y
-			move_success = MakeWay(x_from, y_from, x_from, y_to);
-		} else if (y_from == y_to) {
-			// If y is only moving within tile, then only check x
-			move_success = MakeWay(x_from, y_from, x_to, y_from);
-		} else {
-			// For diagonal movement, try vert -> horiz -> diagonal check
-			move_success = MakeWay(x_from, y_from, x_to, y_to) && MakeWay(x_from, y_from, x_to, y_to) && MakeWay(x_from, y_from, x_to, y_to);
-		}
-	} else if (dx_sub != 0) {
-		if (x_from == x_to) {
-			// If moving within tile for x
-			move_success = true;
-		} else {
-			move_success = MakeWay(x_from, y_from, x_to, y_from);
-		}
-	} else if (dy_sub != 0) {
-		if (y_from == y_to) {
-			// If moving within tile for y
-			move_success = true;
-		} else {
-			move_success = MakeWay(x_from, y_from, x_from, y_to);
-		}
-	} */
-
-	if (move_success == 0 || move_success != move_success_total) {
-		return;
-	}
-	isMovingInPixelAllDir = true;
-	if (dx_sub != 0) {
+	if (move_success_x > 0 && move_success_x == move_success_x_total) {
 		subx += dx_sub;
 		if (subx <= -16) {
 			subx += 16;
@@ -1109,8 +1061,9 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			subx -= 16;
 			SetX(Game_Map::RoundX(x + 1));
 		}
+		isMovingInPixelAllDir = true;
 	}
-	if (dy_sub != 0) {
+	if (move_success_y > 0 && move_success_y == move_success_y_total) {
 		suby += dy_sub;
 		if (suby <= -16) {
 			suby += 16;
@@ -1120,5 +1073,6 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			suby -= 16;
 			SetY(Game_Map::RoundY(y + 1));
 		}
+		isMovingInPixelAllDir = true;
 	}
 }
