@@ -418,8 +418,15 @@ void Game_Player::Update() {
 		// Camera is currently janky, likely due to "amount" not mapping to
 		// how far the player is actually moving.
 		isMovingInPixelAllDir = false;
-		int amount = 1 << (1 + GetMoveSpeed());
-		this->UpdateMovement(amount);
+
+		int pixelMoveSpeed = GetMoveSpeed() / 2;
+		int amount = 1 << (1 + pixelMoveSpeed);
+		UpdateScroll(amount, IsJumping());
+
+		if (!IsMoveRouteOverwritten()) {
+			TriggerSet triggers = { lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision };
+			CheckEventTriggerHere(triggers, false);
+		}
 	}
 
 	if (IsStopping()) {
@@ -903,7 +910,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	// note(jae): 2022-12-29
 	// This needs work to test collisions per pixel so that a player
 	// can end up bumping right up against a wall without going through it.
-	const float move_speed = 2;
+	const int move_speed = GetMoveSpeed() / 2;
 	float dx_sub = 0;
 	float dy_sub = 0;
 	switch (dir) {
@@ -912,27 +919,35 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	case Down:		dy_sub = move_speed; break;
 	case Up:		dy_sub = -move_speed; break;
 	case DownRight: {
-		const auto dirInDeg = 45.0f;
-		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
-		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		dx_sub = move_speed * 0.75;
+		dy_sub = move_speed * 0.75;
+		// const auto dirInDeg = 45.0f;
+		// dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		// dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
 		break;
 	}
 	case DownLeft: {
-		const auto dirInDeg = 135.0f;
-		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
-		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		dx_sub = -move_speed * 0.75;
+		dy_sub = move_speed * 0.75;
+		// const auto dirInDeg = 135.0f;
+		// dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		// dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
 		break;
 	}
 	case UpLeft: {
-		const auto dirInDeg = 225.0f;
-		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
-		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		dx_sub = -move_speed * 0.75;
+		dy_sub = -move_speed * 0.75;
+		// const auto dirInDeg = 225.0f;
+		// dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		// dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
 		break;
 	}
 	case UpRight: {
-		const auto dirInDeg = 315.0f;
-		dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
-		dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
+		dx_sub = move_speed * 0.75;
+		dy_sub = -move_speed * 0.75;
+		// const auto dirInDeg = 315.0f;
+		// dx_sub = move_speed * std::cosf(dirInDeg * (M_PI / 180.f));
+		// dy_sub = move_speed * std::sinf(dirInDeg * (M_PI / 180.f));
 		break;
 	}
 	}
@@ -966,6 +981,10 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		y_from = floor(screen_y);
 		y_to = floor(next_screen_y);
 	}
+	if (dy_sub > 0) {
+		y_from = ceil(screen_y);
+		y_to = ceil(next_screen_y);
+	}
 
 	const int x1_from = floor(screen_x);
 	const int x2_from = ceil(screen_x);
@@ -979,10 +998,6 @@ void Game_Player::MovePixelAllDirections(int dir) {
 
 	int move_success = 0;
 	int move_success_total = 0;
-	if (dx_sub != 0 && dy_sub != 0) {
-		// temporarily disable diagonal move
-		return;
-	}
 	if (dx_sub != 0) {
 		if (x_from == x_to) {
 			// If moving within tile, no tile check needed
