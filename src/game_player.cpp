@@ -986,16 +986,6 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		y_to = ceil(next_screen_y);
 	}
 
-	const int x1_from = floor(screen_x);
-	const int x2_from = ceil(screen_x);
-	const int x1_to = floor(next_screen_x);
-	const int x2_to = ceil(next_screen_x);
-
-	const int y1_from = floor(screen_y);
-	const int y2_from = ceil(screen_y);
-	const int y1_to = floor(next_screen_y);
-	const int y2_to = ceil(next_screen_y);
-
 	int move_success_x = 0;
 	int move_success_x_total = 0;
 	if (dx_sub != 0) {
@@ -1004,6 +994,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			move_success_x++;
 			move_success_x_total++;
 		} else {
+			const int y1_from = floor(screen_y);
+			const int y2_from = ceil(screen_y);
+			const int y1_to = floor(next_screen_y);
+			const int y2_to = ceil(next_screen_y);
+
 			if (y1_from <= y2_from) {
 				for (int y = y1_from; y <= y2_from; y++) {
 					move_success_x += MakeWay(x_from, y, x_to, y);
@@ -1026,6 +1021,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			move_success_y++;
 			move_success_y_total++;
 		} else {
+			const int x1_from = floor(screen_x);
+			const int x2_from = ceil(screen_x);
+			const int x1_to = floor(next_screen_x);
+			const int x2_to = ceil(next_screen_x);
+
 			if (x1_from <= x2_from) {
 				for (int x = x1_from; x <= x2_from; x++) {
 					move_success_y += MakeWay(x, y_from, x, y_to);
@@ -1043,7 +1043,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	// Check diagonal tile if:
 	// - moving diagonally
 	// - is moving between tiles
-	// - can successfully move in both X and Y dimensions (this stops sticking to walls)
+	// - can successfully move in both X and Y dimensions (this should stop sticking to walls)
 	if (dx_sub != 0 && dy_sub != 0 &&
 		x_from != x_to && y_from != y_to &&
 		(move_success_x > 0 && move_success_x == move_success_x_total) && (move_success_y > 0 && move_success_y == move_success_y_total)) {
@@ -1057,6 +1057,26 @@ void Game_Player::MovePixelAllDirections(int dir) {
 
 	if ((move_success_x == 0 || move_success_x != move_success_x_total) &&
 		move_success_y == 0 || move_success_y != move_success_y_total) {
+		// If the next movement would have brought the entity to
+		// the next tile if no collision, then snap entity to current
+		// tile.
+		// ie. Hug them right up against the wall
+		if (subx + dx_sub <= -16) {
+			subx = 0;
+			SetX(Game_Map::RoundX(x - 1));
+		}
+		if (subx + dx_sub >= 16) {
+			subx = 0;
+			SetX(Game_Map::RoundX(x + 1));
+		}
+		if (suby + dy_sub <= -16) {
+			suby = 0;
+			SetY(Game_Map::RoundY(y - 1));
+		}
+		if (suby + dy_sub >= 16) {
+			suby = 0;
+			SetY(Game_Map::RoundY(y + 1));
+		}
 		return;
 	}
 
