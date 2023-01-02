@@ -52,7 +52,7 @@ Game_Player::Game_Player(): Game_PlayerBase(Player)
 	//
 	// If this gets polished enough, this should be a feature flag or a command
 	// should be callable to toggle this on/off
-	moveMode = MoveMode::MoveModePixelAllDirections;
+	moveMode = MoveMode::Pixel8Directions;
 }
 
 void Game_Player::SetSaveData(lcf::rpg::SavePartyLocation save)
@@ -137,9 +137,12 @@ void Game_Player::MoveTo(int map_id, int x, int y) {
 
 	Game_Character::MoveTo(map_id, x, y);
 
-	// reset sub-tile positions
-	subx = 0;
-	suby = 0;
+	// reset sub-tile positions so they're exactly on the
+	// new move to position
+	if (moveMode == MoveMode::Pixel8Directions) {
+		subx = 0;
+		suby = 0;
+	}
 
 	SetEncounterSteps(0);
 	SetMenuCalling(false);
@@ -317,7 +320,7 @@ void Game_Player::UpdateNextMovementAction() {
 
 	int move_dir = -1;
 	switch (moveMode) {
-	case MoveMode::MoveModeDefault:
+	case MoveMode::Default:
 		switch (Input::dir4) {
 		case 2:
 			move_dir = Down;
@@ -333,7 +336,7 @@ void Game_Player::UpdateNextMovementAction() {
 			break;
 		}
 		break;
-	case MoveMode::MoveModePixelAllDirections:
+	case MoveMode::Pixel8Directions:
 		switch (Input::dir8) {
 		case Input::Direction::DOWN:
 			move_dir = Down;
@@ -572,6 +575,12 @@ bool Game_Player::GetOnVehicle() {
 	auto* vehicle = Game_Map::GetVehicle(Game_Vehicle::Airship);
 
 	if (vehicle->IsInPosition(GetX(), GetY()) && IsStopping() && vehicle->IsStopping()) {
+		// note(jae): 2022-01-02
+		// Might be worth making the player move into
+		// the tile and then trigger that they've finished boarding.
+		if (moveMode == MoveMode::Pixel8Directions) {
+			subx = suby = 0;
+		}
 		data()->vehicle = Game_Vehicle::Airship;
 		data()->aboard = true;
 
@@ -606,6 +615,11 @@ bool Game_Player::GetOnVehicle() {
 		data()->vehicle = vehicle->GetVehicleType();
 		data()->preboard_move_speed = GetMoveSpeed();
 		data()->boarding = true;
+
+		// todo(jae): 2022-01-02
+		// Properly handle boarding of boats.
+		// Can't simply do a subx/suby reset
+		// subx = suby = 0;
 	}
 
 	Main_Data::game_system->SetBeforeVehicleMusic(Main_Data::game_system->GetCurrentBGM());
@@ -690,10 +704,10 @@ bool Game_Player::Move(int dir) {
 	}
 
 	switch (moveMode) {
-	case MoveMode::MoveModeDefault:
+	case MoveMode::Default:
 		Game_Character::Move(dir);
 		break;
-	case MoveMode::MoveModePixelAllDirections:
+	case MoveMode::Pixel8Directions:
 		MovePixelAllDirections(dir);
 		break;
 	default:
@@ -916,8 +930,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	// can end up bumping right up against a wall without going through it.
 	const int move_speed = GetMoveSpeed() / 2;
 
-	// If the entity is given move commands, use grid-based movement again
-	if (IsMoveRouteOverwritten() && GetMoveRoute().move_commands.size() > 0) {
+	// Revert back to grid-movement if:
+	// - Given move commands
+	// - Is in an vehicle
+	if ((IsMoveRouteOverwritten() && GetMoveRoute().move_commands.size() > 0)
+		|| InVehicle()) {
 		// If the entity isn't exactly aligned with the current tile
 		// move them into it before processing move commands.
 		bool moveBackIntoTileFirst = false;

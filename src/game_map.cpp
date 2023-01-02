@@ -634,12 +634,12 @@ bool Game_Map::MakeWay(const Game_Character& self,
 		auto& player = Main_Data::game_player;
 		if (player->GetVehicleType() == Game_Vehicle::None) {
 			switch (player->GetMoveMode()) {
-			case Game_Player::MoveMode::MoveModeDefault:
+			case Game_Player::MoveMode::Default:
 				if (MakeWayCollideEvent(to_x, to_y, self, *Main_Data::game_player, self_conflict)) {
 					return false;
 				}
 				break;
-			case Game_Player::MoveMode::MoveModePixelAllDirections:
+			case Game_Player::MoveMode::Pixel8Directions:
 				if (MakeWayCollidePlayerPixel(to_x, to_y, self, *Main_Data::game_player, self_conflict)) {
 					return false;
 				}

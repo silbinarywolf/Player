@@ -131,8 +131,8 @@ public:
 	 * Define how the player moves in-engine
 	 */
 	enum class MoveMode: int {
-		MoveModeDefault, // Rm2k/3 behaviour
-		MoveModePixelAllDirections
+		Default, // Rm2k/3 behaviour
+		Pixel8Directions
 	};
 
 	int GetScreenX(bool apply_shift = false) const;
@@ -173,7 +173,7 @@ private:
 	bool UpdateAirship();
 	void UpdateVehicleActions();
 
-	MoveMode moveMode = MoveMode::MoveModeDefault;
+	MoveMode moveMode = MoveMode::Default;
 
 	void MovePixelAllDirections(int dir); // for pixel-movement
 	float subx = 0; // for pixel-movement
