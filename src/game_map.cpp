@@ -545,6 +545,25 @@ static bool MakeWayCollideEvent(int x, int y, const Game_Character& self, T& oth
 	return WouldCollide(self, other, self_conflict);
 }
 
+static bool MakeWayCollidePlayerPixel(int x, int y, const Game_Character& self, Game_Player& other, bool self_conflict) {
+	if (&self == &other) {
+		return false;
+	}
+
+	if (!other.IsInPosition(x, y)) {
+		return false;
+	}
+
+	// Force the other event to update, allowing them to possibly move out of the way.
+	other.Update(); // MakeWayUpdate(other);
+
+	if (!other.IsInPosition(x, y)) {
+		return false;
+	}
+
+	return WouldCollide(self, other, self_conflict);
+}
+
 static Game_Vehicle::Type GetCollisionVehicleType(const Game_Character* ch) {
 	if (ch && ch->GetType() == Game_Character::Vehicle) {
 		return static_cast<Game_Vehicle::Type>(static_cast<const Game_Vehicle*>(ch)->GetVehicleType());
@@ -614,8 +633,21 @@ bool Game_Map::MakeWay(const Game_Character& self,
 		}
 		auto& player = Main_Data::game_player;
 		if (player->GetVehicleType() == Game_Vehicle::None) {
-			if (MakeWayCollideEvent(to_x, to_y, self, *Main_Data::game_player, self_conflict)) {
-				return false;
+			switch (player->GetMoveMode()) {
+			case Game_Player::MoveMode::MoveModeDefault:
+				if (MakeWayCollideEvent(to_x, to_y, self, *Main_Data::game_player, self_conflict)) {
+					return false;
+				}
+				break;
+			case Game_Player::MoveMode::MoveModePixelAllDirections:
+				if (MakeWayCollidePlayerPixel(to_x, to_y, self, *Main_Data::game_player, self_conflict)) {
+					return false;
+				}
+				break;
+			default:
+				Output::Warning("Player MoveMode: Invalid mode move {}", static_cast<int>(player->GetMoveMode()));
+				assert(false);
+				break;
 			}
 		}
 		for (auto vid: { Game_Vehicle::Boat, Game_Vehicle::Ship}) {

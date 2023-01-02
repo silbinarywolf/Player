@@ -130,7 +130,7 @@ public:
 	/**
 	 * Define how the player moves in-engine
 	 */
-	enum MoveMode {
+	enum class MoveMode: int {
 		MoveModeDefault, // Rm2k/3 behaviour
 		MoveModePixelAllDirections
 	};
@@ -148,6 +148,9 @@ public:
 	void UnlockPan();
 	void StartPan(int direction, int distance, int speed);
 	void ResetPan(int speed);
+
+	/** @return movement style of the player, default Rm2k/3 behaviour or another custom type */
+	MoveMode GetMoveMode() const;
 
 	/** @return how many frames it'll take to finish the current pan */
 	int GetPanWait();
@@ -170,7 +173,7 @@ private:
 	bool UpdateAirship();
 	void UpdateVehicleActions();
 
-	MoveMode moveMode = MoveModeDefault;
+	MoveMode moveMode = MoveMode::MoveModeDefault;
 
 	void MovePixelAllDirections(int dir); // for pixel-movement
 	float subx = 0; // for pixel-movement
@@ -257,5 +260,8 @@ inline int Game_Player::GetVehicleType() const {
 	return data()->vehicle;
 }
 
+inline Game_Player::MoveMode Game_Player::GetMoveMode() const {
+	return moveMode;
+}
 
 #endif

@@ -52,7 +52,7 @@ Game_Player::Game_Player(): Game_PlayerBase(Player)
 	//
 	// If this gets polished enough, this should be a feature flag or a command
 	// should be callable to toggle this on/off
-	moveMode = MoveModePixelAllDirections;
+	moveMode = MoveMode::MoveModePixelAllDirections;
 }
 
 void Game_Player::SetSaveData(lcf::rpg::SavePartyLocation save)
@@ -317,7 +317,7 @@ void Game_Player::UpdateNextMovementAction() {
 
 	int move_dir = -1;
 	switch (moveMode) {
-	case MoveModeDefault:
+	case MoveMode::MoveModeDefault:
 		switch (Input::dir4) {
 		case 2:
 			move_dir = Down;
@@ -333,7 +333,7 @@ void Game_Player::UpdateNextMovementAction() {
 			break;
 		}
 		break;
-	case MoveModePixelAllDirections:
+	case MoveMode::MoveModePixelAllDirections:
 		switch (Input::dir8) {
 		case Input::Direction::DOWN:
 			move_dir = Down;
@@ -362,7 +362,8 @@ void Game_Player::UpdateNextMovementAction() {
 		}
 		break;
 	default:
-		Output::Warning("Player MoveMode: Invalid mode move {}", moveMode);
+		Output::Warning("Player MoveMode: Invalid mode move {}", static_cast<int>(moveMode));
+		assert(false);
 		break;
 	}
 	if (move_dir >= 0) {
@@ -689,15 +690,16 @@ bool Game_Player::Move(int dir) {
 	}
 
 	switch (moveMode) {
-	case MoveModeDefault:
+	case MoveMode::MoveModeDefault:
 		Game_Character::Move(dir);
 		break;
-	case MoveModePixelAllDirections: {
+	case MoveMode::MoveModePixelAllDirections:
 		MovePixelAllDirections(dir);
 		break;
-	}
 	default:
-		Output::Warning("Player MoveMode: Invalid mode move {}", moveMode);
+		Output::Warning("Player MoveMode: Invalid mode move {}", static_cast<int>(moveMode));
+		assert(false);
+		break;
 	}
 	if (IsStopping()) {
 		return false;
