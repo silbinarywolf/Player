@@ -136,6 +136,11 @@ void Game_Player::MoveTo(int map_id, int x, int y) {
 	const auto map_changed = (GetMapId() != map_id);
 
 	Game_Character::MoveTo(map_id, x, y);
+
+	// reset sub-tile positions
+	subx = 0;
+	suby = 0;
+
 	SetEncounterSteps(0);
 	SetMenuCalling(false);
 
@@ -910,7 +915,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	const int move_speed = GetMoveSpeed() / 2;
 
 	// If the entity is given move commands, use grid-based movement again
-	if (GetMoveRoute().move_commands.size() > 0) {
+	if (IsMoveRouteOverwritten() && GetMoveRoute().move_commands.size() > 0) {
 		// If the entity isn't exactly aligned with the current tile
 		// move them into it before processing move commands.
 		bool moveBackIntoTileFirst = false;
@@ -1112,6 +1117,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		move_success_y_total++;
 	}
 
+	// If failed to move in both X and Y dimension
 	if ((move_success_x == 0 || move_success_x != move_success_x_total) &&
 		(move_success_y == 0 || move_success_y != move_success_y_total)) {
 		// If currently partially in a tile and hit collision,
@@ -1133,7 +1139,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			suby = 0;
 			SetY(Game_Map::RoundY(y + 1));
 		}
-		// If in any sub-pixel position that didn't meet above conditions
+		// If in any sub-tile position that didn't meet above conditions
 		// just zero it out.
 		if (dx_sub != 0) {
 			subx = 0;
