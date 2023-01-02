@@ -904,13 +904,64 @@ void Game_Player::UpdatePan() {
 }
 
 void Game_Player::MovePixelAllDirections(int dir) {
-	SetDirection(dir);
-	UpdateFacing();
-
 	// note(jae): 2022-12-29
 	// This needs work to test collisions per pixel so that a player
 	// can end up bumping right up against a wall without going through it.
 	const int move_speed = GetMoveSpeed() / 2;
+
+	// If the entity is given move commands, use grid-based movement again
+	if (GetMoveRoute().move_commands.size() > 0) {
+		// If the entity isn't exactly aligned with the current tile
+		// move them into it before processing move commands.
+		bool moveBackIntoTileFirst = false;
+		int new_dir = -1;
+		if (subx > 0) {
+			SetDirection(Left);
+			SetFacing(GetDirection());
+			subx -= move_speed;
+			if (subx < 0) {
+				subx = 0;
+			}
+			moveBackIntoTileFirst = true;
+		}
+		if (subx < 0) {
+			SetDirection(Right);
+			SetFacing(GetDirection());
+			subx += move_speed;
+			if (subx > 0) {
+				subx = 0;
+			}
+			moveBackIntoTileFirst = true;
+		}
+		if (suby > 0) {
+			SetDirection(Up);
+			SetFacing(GetDirection());
+
+			suby -= move_speed;
+			if (suby < 0) {
+				suby = 0;
+			}
+			moveBackIntoTileFirst = true;
+		}
+		if (suby < 0) {
+			SetDirection(Down);
+			SetFacing(GetDirection());
+			suby += move_speed;
+			if (suby > 0) {
+				suby = 0;
+			}
+			moveBackIntoTileFirst = true;
+		}
+		if (moveBackIntoTileFirst) {
+			return;
+		}
+		// Use classic grid-based movement for move commands
+		Game_Character::Move(dir);
+		return;
+	}
+	SetDirection(dir);
+	UpdateFacing();
+
 	float dx_sub = 0;
 	float dy_sub = 0;
 	switch (dir) {
@@ -963,7 +1014,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 
 	Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
 	Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
-	Output::Warning("Player VelXY: {},{}", dx_sub, dy_sub);
+	Output::Warning("Player Vel: X{}, Y{}", dx_sub, dy_sub);
 
 	int x_from = x;
 	int x_to = x;
