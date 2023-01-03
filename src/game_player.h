@@ -152,6 +152,12 @@ public:
 	/** @return movement style of the player, default Rm2k/3 behaviour or another custom type */
 	MoveMode GetMoveMode() const;
 
+	/**
+	 * If moveMode is Pixel8Directions, then this is used in collision detection cases to see if
+	 * the given X/Y coordinates is colliding with the player.
+	 */
+	bool IsInPixelPosition(int x, int y) const;
+
 	/** @return how many frames it'll take to finish the current pan */
 	int GetPanWait();
 

@@ -1030,15 +1030,15 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	const auto x = GetX();
 	const auto y = GetY();
 
-	const auto screen_x = ((x * 16) + subx) / 16;
-	const auto screen_y = ((y * 16) + suby) / 16;
+	const auto screen_x = ((x * TILE_SIZE) + subx) / TILE_SIZE;
+	const auto screen_y = ((y * TILE_SIZE) + suby) / TILE_SIZE;
 
-	const float next_screen_x = ((x * 16) + subx + dx_sub) / 16;
-	const float next_screen_y = ((y * 16) + suby + dy_sub) / 16;
+	const float next_screen_x = ((x * TILE_SIZE) + subx + dx_sub) / TILE_SIZE;
+	const float next_screen_y = ((y * TILE_SIZE) + suby + dy_sub) / TILE_SIZE;
 
-	Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
-	Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
-	Output::Warning("Player Vel: X{}, Y{}", dx_sub, dy_sub);
+	// Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
+	// Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
+	// Output::Warning("Player Vel: X{}, Y{}", dx_sub, dy_sub);
 
 	int x_from = x;
 	int x_to = x;
@@ -1142,19 +1142,19 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		// If currently partially in a tile and hit collision,
 		// move to be completely in.
 		// ie. You can hug the top of the map/room and navigate between 2 tiles with 1 tile in-between
-		if (subx + dx_sub <= -16) {
+		if (subx + dx_sub <= -TILE_SIZE) {
 			subx = 0;
 			SetX(Game_Map::RoundX(x - 1));
 		}
-		if (subx + dx_sub >= 16) {
+		if (subx + dx_sub >= TILE_SIZE) {
 			subx = 0;
 			SetX(Game_Map::RoundX(x + 1));
 		}
-		if (suby + dy_sub <= -16) {
+		if (suby + dy_sub <= -TILE_SIZE) {
 			suby = 0;
 			SetY(Game_Map::RoundY(y - 1));
 		}
-		if (suby + dy_sub >= 16) {
+		if (suby + dy_sub >= TILE_SIZE) {
 			suby = 0;
 			SetY(Game_Map::RoundY(y + 1));
 		}
@@ -1171,26 +1171,39 @@ void Game_Player::MovePixelAllDirections(int dir) {
 
 	if (move_success_x > 0 && move_success_x == move_success_x_total) {
 		subx += dx_sub;
-		if (subx <= -16) {
-			subx += 16;
+		if (subx <= -TILE_SIZE) {
+			subx += TILE_SIZE;
 			SetX(Game_Map::RoundX(x - 1));
 		}
-		if (subx >= 16) {
-			subx -= 16;
+		if (subx >= TILE_SIZE) {
+			subx -= TILE_SIZE;
 			SetX(Game_Map::RoundX(x + 1));
 		}
 		isMovingInPixelAllDir = true;
 	}
 	if (move_success_y > 0 && move_success_y == move_success_y_total) {
 		suby += dy_sub;
-		if (suby <= -16) {
-			suby += 16;
+		if (suby <= -TILE_SIZE) {
+			suby += TILE_SIZE;
 			SetY(Game_Map::RoundY(y - 1));
 		}
-		if (suby >= 16) {
-			suby -= 16;
+		if (suby >= TILE_SIZE) {
+			suby -= TILE_SIZE;
 			SetY(Game_Map::RoundY(y + 1));
 		}
 		isMovingInPixelAllDir = true;
 	}
+}
+
+bool Game_Player::IsInPixelPosition(int x, int y) const {
+	const auto this_x = ((GetX() * TILE_SIZE) + subx) / TILE_SIZE;
+	const auto this_y = ((GetY() * TILE_SIZE) + suby) / TILE_SIZE;
+	const auto x1 = floor(this_x);
+	const auto x2 = ceil(this_x);
+	const auto y1 = floor(this_y);
+	const auto y2 = ceil(this_y);
+	// Entity can consume up to 4 tiles at once, so check if the position
+	// hits any of those
+	return ((x1 == x && y1 == y) || (x2 == x && y1 == y) ||
+			(x1 == x && y2 == y) || (x2 == x && y2 == y));
 }

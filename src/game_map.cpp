@@ -550,14 +550,14 @@ static bool MakeWayCollidePlayerPixel(int x, int y, const Game_Character& self, 
 		return false;
 	}
 
-	if (!other.IsInPosition(x, y)) {
+	if (!other.IsInPixelPosition(x, y)) {
 		return false;
 	}
 
 	// Force the other event to update, allowing them to possibly move out of the way.
-	other.Update(); // MakeWayUpdate(other);
+	MakeWayUpdate(other);
 
-	if (!other.IsInPosition(x, y)) {
+	if (!other.IsInPixelPosition(x, y)) {
 		return false;
 	}
 
