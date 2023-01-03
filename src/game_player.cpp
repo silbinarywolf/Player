@@ -1030,35 +1030,35 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	const auto x = GetX();
 	const auto y = GetY();
 
-	const auto screen_x = ((x * TILE_SIZE) + subx) / TILE_SIZE;
-	const auto screen_y = ((y * TILE_SIZE) + suby) / TILE_SIZE;
+	const auto x_pix = ((x * TILE_SIZE) + subx) / TILE_SIZE;
+	const auto y_pix = ((y * TILE_SIZE) + suby) / TILE_SIZE;
 
-	const float next_screen_x = ((x * TILE_SIZE) + subx + dx_sub) / TILE_SIZE;
-	const float next_screen_y = ((y * TILE_SIZE) + suby + dy_sub) / TILE_SIZE;
+	const float next_x_pix = ((x * TILE_SIZE) + subx + dx_sub) / TILE_SIZE;
+	const float next_y_pix = ((y * TILE_SIZE) + suby + dy_sub) / TILE_SIZE;
 
-	// Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(screen_x), ceil(screen_x), floor(screen_y), ceil(screen_y));
-	// Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_screen_x), ceil(next_screen_x), floor(next_screen_y), ceil(next_screen_y));
+	// Output::Warning("Player Position: X({}, {}), Y({}, {})", floor(x_pix), ceil(x_pix), floor(y_pix), ceil(y_pix));
+	// Output::Warning("Player Next Position: X({}, {}), Y({}, {})", floor(next_x_pix), ceil(next_x_pix), floor(next_y_pix), ceil(next_y_pix));
 	// Output::Warning("Player Vel: X{}, Y{}", dx_sub, dy_sub);
 
 	int x_from = x;
 	int x_to = x;
 	if (dx_sub < 0) {
-		x_from = floor(screen_x);
-		x_to = floor(next_screen_x);
+		x_from = floor(x_pix);
+		x_to = floor(next_x_pix);
 	}
 	if (dx_sub > 0) {
-		x_from = ceil(screen_x);
-		x_to = ceil(next_screen_x);
+		x_from = ceil(x_pix);
+		x_to = ceil(next_x_pix);
 	}
 	int y_from = y;
 	int y_to = y;
 	if (dy_sub < 0) {
-		y_from = floor(screen_y);
-		y_to = floor(next_screen_y);
+		y_from = floor(y_pix);
+		y_to = floor(next_y_pix);
 	}
 	if (dy_sub > 0) {
-		y_from = ceil(screen_y);
-		y_to = ceil(next_screen_y);
+		y_from = ceil(y_pix);
+		y_to = ceil(next_y_pix);
 	}
 
 	int move_success_x = 0;
@@ -1071,11 +1071,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		} else {
 			// Entity can consume up to 2 Y-coord tiles at once (4 tiles all up), 
 			// so when moving left/right we need to check if we can make way
-			// from two Y positions.
-			const int y1_from = floor(screen_y);
-			const int y2_from = ceil(screen_y);
-			const int y1_to = floor(next_screen_y);
-			const int y2_to = ceil(next_screen_y);
+			// from up to two Y positions.
+			const int y1_from = floor(y_pix);
+			const int y2_from = ceil(y_pix);
+			const int y1_to = floor(next_y_pix);
+			const int y2_to = ceil(next_y_pix);
 
 			if (y1_from <= y2_from) {
 				for (int y = y1_from; y <= y2_from; y++) {
@@ -1101,11 +1101,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		} else {
 			// Entity can consume up to 2 X-coord tiles at once (4 tiles all up), 
 			// so when moving up/down we need to check if we can make way
-			// from two X positions.
-			const int x1_from = floor(screen_x);
-			const int x2_from = ceil(screen_x);
-			const int x1_to = floor(next_screen_x);
-			const int x2_to = ceil(next_screen_x);
+			// from up to two X positions.
+			const int x1_from = floor(x_pix);
+			const int x2_from = ceil(x_pix);
+			const int x1_to = floor(next_x_pix);
+			const int x2_to = ceil(next_x_pix);
 
 			if (x1_from <= x2_from) {
 				for (int x = x1_from; x <= x2_from; x++) {
@@ -1124,7 +1124,8 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	// Check diagonal tile if:
 	// - moving diagonally
 	// - is moving between tiles
-	// - can successfully move in both X and Y dimensions (this should stop sticking to walls)
+	// - can successfully move in both X and Y dimensions
+	//		- This check stops the entity sticking to walls, such as moving up-left, but a wall is up. You want the entity to move left still.
 	if (dx_sub != 0 && dy_sub != 0 &&
 		x_from != x_to && y_from != y_to &&
 		(move_success_x > 0 && move_success_x == move_success_x_total) && (move_success_y > 0 && move_success_y == move_success_y_total)) {
@@ -1139,6 +1140,10 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	// If failed to move in both X and Y dimension
 	if ((move_success_x == 0 || move_success_x != move_success_x_total) &&
 		(move_success_y == 0 || move_success_y != move_success_y_total)) {
+		// todo(jae): 2022-01-03
+		// Maybe kill this if-statement and move the hug code to the "else" if the
+		// checks below. Will likely feel more correct when moving diagonally.
+
 		// If currently partially in a tile and hit collision,
 		// move to be completely in.
 		// ie. You can hug the top of the map/room and navigate between 2 tiles with 1 tile in-between
