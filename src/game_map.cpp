@@ -960,11 +960,31 @@ int Game_Map::RoundDy(int dy, int units) {
 }
 
 int Game_Map::XwithDirection(int x, int direction) {
-	return RoundX(x + (direction == lcf::rpg::EventPage::Direction_right ? 1 : direction == lcf::rpg::EventPage::Direction_left ? -1 : 0));
+	const int delta_lookup[8] = {
+		0,  // Up
+		1,  // Right
+		0,  // Down
+		-1, // Left
+		1,  // UpRight
+		1,  // DownRight
+		-1, // DownLeft
+		-1  // UpLeft
+	};
+	return RoundX(x + delta_lookup[direction]);
 }
 
 int Game_Map::YwithDirection(int y, int direction) {
-	return RoundY(y + (direction == lcf::rpg::EventPage::Direction_down ? 1 : direction == lcf::rpg::EventPage::Direction_up ? -1 : 0));
+	const int delta_lookup[8] = {
+		-1, // Up
+		0,  // Right
+		1,  // Down
+		0,  // Left
+		-1, // UpRight
+		1,  // DownRight
+		1,  // DownLeft
+		-1  // UpLeft
+	};
+	return RoundY(y + delta_lookup[direction]);
 }
 
 int Game_Map::CheckEvent(int x, int y) {

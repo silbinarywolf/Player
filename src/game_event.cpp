@@ -400,8 +400,14 @@ void Game_Event::CheckCollisonOnMoveFailure() {
 	const auto front_x = Game_Map::XwithDirection(GetX(), GetDirection());
 	const auto front_y = Game_Map::YwithDirection(GetY(), GetDirection());
 
-	if (Main_Data::game_player->GetX() == front_x
-			&& Main_Data::game_player->GetY() == front_y
+	const int player_x = Main_Data::game_player->GetX();
+	const int player_y = Main_Data::game_player->GetY();
+
+	// Hold player_x2 and player_y2 position for Game_player::MoveMode::Pixel8Directions
+	const int player_x2 = player_x + Utils::Signum(Main_Data::game_player->GetSubX());
+	const int player_y2 = player_y + Utils::Signum(Main_Data::game_player->GetSubY());
+	if ((player_x == front_x || player_x2 == front_x)
+			&& (player_y == front_y || player_y2 == front_y)
 			&& GetLayer() == lcf::rpg::EventPage::Layers_same
 			&& GetTrigger() == lcf::rpg::EventPage::Trigger_collision)
 	{

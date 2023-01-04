@@ -158,6 +158,12 @@ public:
 	 */
 	bool IsInPixelPosition(int x, int y) const;
 
+	/** Get sub-tile X position for MoveMode::Pixel8Directions */
+	float GetSubX() const;
+
+	/** Get sub-tile Y position for MoveMode::Pixel8Directions */
+	float GetSubY() const;
+
 	/** @return how many frames it'll take to finish the current pan */
 	int GetPanWait();
 
@@ -268,6 +274,14 @@ inline int Game_Player::GetVehicleType() const {
 
 inline Game_Player::MoveMode Game_Player::GetMoveMode() const {
 	return moveMode;
+}
+
+inline float Game_Player::GetSubX() const {
+	return subx;
+}
+
+inline float Game_Player::GetSubY() const {
+	return suby;
 }
 
 #endif

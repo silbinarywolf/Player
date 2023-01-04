@@ -503,38 +503,23 @@ bool Game_Player::CheckActionEvent() {
 }
 
 bool Game_Player::CheckEventTriggerHere(TriggerSet triggers, bool triggered_by_decision_key) {
-	if (InAirship()) {
-		return false;
-	}
-
-	bool result = false;
-
-	for (auto& ev: Game_Map::GetEvents()) {
-		const auto trigger = ev.GetTrigger();
-		if (ev.IsActive()
-				&& ev.GetX() == GetX()
-				&& ev.GetY() == GetY()
-				&& ev.GetLayer() != lcf::rpg::EventPage::Layers_same
-				&& trigger >= 0
-				&& triggers[trigger]) {
-			SetEncounterCalling(false);
-			result |= ev.ScheduleForegroundExecution(triggered_by_decision_key, true);
-		}
-	}
-	return result;
+	return CheckEventTriggerThere(triggers, GetX(), GetY(), triggered_by_decision_key);
 }
 
 bool Game_Player::CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool triggered_by_decision_key) {
 	if (InAirship()) {
 		return false;
 	}
-	bool result = false;
+	// Hold secondary X and Y position for MoveMode::Pixel8Directions
+	const int x2 = x + Utils::Signum(subx);
+	const int y2 = y + Utils::Signum(suby);
 
+	bool result = false;
 	for (auto& ev : Game_Map::GetEvents()) {
 		const auto trigger = ev.GetTrigger();
 		if (ev.IsActive()
-				&& ev.GetX() == x
-				&& ev.GetY() == y
+				&& (ev.GetX() == x || ev.GetX() == x2)
+				&& (ev.GetY() == y || ev.GetY() == y2)
 				&& ev.GetLayer() == lcf::rpg::EventPage::Layers_same
 				&& trigger >= 0
 				&& triggers[trigger]) {
@@ -542,6 +527,7 @@ bool Game_Player::CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool
 			result |= ev.ScheduleForegroundExecution(triggered_by_decision_key, true);
 		}
 	}
+
 	return result;
 }
 
