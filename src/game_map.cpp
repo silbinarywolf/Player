@@ -545,6 +545,15 @@ static bool MakeWayCollideEvent(int x, int y, const Game_Character& self, T& oth
 	return WouldCollide(self, other, self_conflict);
 }
 
+/**
+ * This function is a copy-paste of MakeWayCollideEvent but it handles collision if the Game_Player is using
+ * the MoveMode::Pixel8Directions.
+ *
+ * This approach was taken instead of simply overriding IsInPosition as that function is used in calls such as:
+ * - Game_Map::GetEventAt, which is called by CommandStoreEventID
+ * 
+ * We've decided that the player only has 1 canonical position with regards to command store events for the time-being.
+ */
 static bool MakeWayCollidePlayerPixel(int x, int y, const Game_Character& self, Game_Player& other, bool self_conflict) {
 	if (&self == &other) {
 		return false;
@@ -961,30 +970,32 @@ int Game_Map::RoundDy(int dy, int units) {
 
 int Game_Map::XwithDirection(int x, int direction) {
 	const int delta_lookup[8] = {
+		// These are used for default Rm2k/3 behaviour
 		0,  // Up
 		1,  // Right
 		0,  // Down
 		-1, // Left
-		// These are only used for Game_Player::MoveMode::Pixel8Directions
-		1,  // UpRight
-		1,  // DownRight
-		-1, // DownLeft
-		-1  // UpLeft
+		// These are only used for Game_Player::MoveMode::Pixel8Directions behaviour
+		0, // 1,  // UpRight
+		0, // 1,  // DownRight
+		0, // -1, // DownLeft
+		0, // -1  // UpLeft
 	};
 	return RoundX(x + delta_lookup[direction]);
 }
 
 int Game_Map::YwithDirection(int y, int direction) {
 	const int delta_lookup[8] = {
+		// These are used for default Rm2k/3 behaviour
 		-1, // Up
 		0,  // Right
 		1,  // Down
 		0,  // Left
-		// These are only used for Game_Player::MoveMode::Pixel8Directions
-		-1, // UpRight
-		1,  // DownRight
-		1,  // DownLeft
-		-1  // UpLeft
+		// These are only used for Game_Player::MoveMode::Pixel8Directions behaviour
+		0, // -1, // UpRight
+		0, // 1,  // DownRight
+		0, // 1,  // DownLeft
+		0, // -1  // UpLeft
 	};
 	return RoundY(y + delta_lookup[direction]);
 }

@@ -403,7 +403,7 @@ void Game_Event::CheckCollisonOnMoveFailure() {
 	const int player_x = Main_Data::game_player->GetX();
 	const int player_y = Main_Data::game_player->GetY();
 
-	// Hold player_x2 and player_y2 position for Game_player::MoveMode::Pixel8Directions
+	// player_x2 and player_y2 are for Game_player::MoveMode::Pixel8Directions behaviour
 	const int player_x2 = player_x + Utils::Signum(Main_Data::game_player->GetSubX());
 	const int player_y2 = player_y + Utils::Signum(Main_Data::game_player->GetSubY());
 	if ((player_x == front_x || player_x2 == front_x)
