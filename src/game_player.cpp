@@ -422,17 +422,22 @@ void Game_Player::Update() {
 		// Hack to move the camera and possibly call CheckEventTriggerHere.
 		// Likely needs adjustment/work.
 		//
-		// Camera is currently janky, likely due to "amount" not mapping to
-		// how far the player is actually moving.
+		// Camera is currently janky, need to investigate properly into how it works.
 		hasPixelMovedThisTick = false;
 
 		// int pixelMoveSpeed = GetMoveSpeed() / 2;
 		int amount = 1 << (1 + GetMoveSpeed());
+		if (IsDirectionDiagonal(GetDirection())) {
+			// note(jae): 2022-01-04
+			// When moving diagonally, the move_speed is multiplied by 0.75
+			// so we do that here too. Camera still jitters though when walking diagonally
+			// so it's not an ideal solution.
+			amount *= 0.75;
+		}
 		UpdateScroll(amount, IsJumping());
 
 		if (!IsMoveRouteOverwritten()) {
-			TriggerSet triggers = { lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision };
-			CheckEventTriggerHere(triggers, false);
+			CheckEventTriggerHere({ lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision }, false);
 		}
 	}
 
@@ -1060,6 +1065,9 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	case Down:		dy_sub = move_speed; break;
 	case Up:		dy_sub = -move_speed; break;
 	case DownRight: {
+		// note(jae): 2022-01-04
+		// Using sin/cos, move_speed of 2, generally ends up being 1.41.
+		// I instead opt to make it a "clean" 1.5
 		dx_sub = move_speed * 0.75;
 		dy_sub = move_speed * 0.75;
 		// const auto dirInDeg = 45.0f;
