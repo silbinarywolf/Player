@@ -965,6 +965,7 @@ int Game_Map::XwithDirection(int x, int direction) {
 		1,  // Right
 		0,  // Down
 		-1, // Left
+		// These are only used for Game_Player::MoveMode::Pixel8Directions
 		1,  // UpRight
 		1,  // DownRight
 		-1, // DownLeft
@@ -979,6 +980,7 @@ int Game_Map::YwithDirection(int y, int direction) {
 		0,  // Right
 		1,  // Down
 		0,  // Left
+		// These are only used for Game_Player::MoveMode::Pixel8Directions
 		-1, // UpRight
 		1,  // DownRight
 		1,  // DownLeft

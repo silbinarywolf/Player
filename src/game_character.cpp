@@ -488,7 +488,7 @@ bool Game_Character::Move(int dir) {
 	if (dx && dy) {
 		// For diagonal movement, RPG_RT trys vert -> horiz and if that fails, then horiz -> vert.
 		move_success = (MakeWay(x, y, x, y + dy) && MakeWay(x, y + dy, x + dx, y + dy))
-			|| (MakeWay(x, y, x + dx, y) && MakeWay(x + dx, y, x + dx, y + dy));
+					|| (MakeWay(x, y, x + dx, y) && MakeWay(x + dx, y, x + dx, y + dy));
 	} else if (dx) {
 		move_success = MakeWay(x, y, x + dx, y);
 	} else if (dy) {
