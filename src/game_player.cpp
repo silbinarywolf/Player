@@ -995,9 +995,6 @@ void Game_Player::UpdatePan() {
 }
 
 void Game_Player::MovePixelAllDirections(int dir) {
-	// note(jae): 2022-12-29
-	// This needs work to test collisions per pixel so that a player
-	// can end up bumping right up against a wall without going through it.
 	const int move_speed = GetMoveSpeed() / 2;
 
 	// Revert back to grid-movement if:
@@ -1008,7 +1005,6 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		// If the entity isn't exactly aligned with the current tile
 		// move them into it before processing move commands.
 		bool moveBackIntoTileFirst = false;
-		int new_dir = -1;
 		if (subx > 0) {
 			SetDirection(Left);
 			SetFacing(GetDirection());
