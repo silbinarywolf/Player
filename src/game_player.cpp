@@ -1247,13 +1247,15 @@ void Game_Player::MovePixelAllDirections(int dir) {
 		return;
 	}
 
+	// If the entity has moved a half-tile across, consider them in the new tile
+	// ie. if (subx < -TILE_SIZE/2) { subx += TILE_SIZE; }
 	if (move_success_x > 0 && move_success_x == move_success_x_total) {
 		subx += dx_sub;
-		if (subx <= -TILE_SIZE) {
+		if (subx < -TILE_SIZE/2) {
 			subx += TILE_SIZE;
 			SetX(Game_Map::RoundX(x - 1));
 		}
-		if (subx >= TILE_SIZE) {
+		if (subx > TILE_SIZE/2) {
 			subx -= TILE_SIZE;
 			SetX(Game_Map::RoundX(x + 1));
 		}
@@ -1261,11 +1263,11 @@ void Game_Player::MovePixelAllDirections(int dir) {
 	}
 	if (move_success_y > 0 && move_success_y == move_success_y_total) {
 		suby += dy_sub;
-		if (suby <= -TILE_SIZE) {
+		if (suby < -TILE_SIZE/2) {
 			suby += TILE_SIZE;
 			SetY(Game_Map::RoundY(y - 1));
 		}
-		if (suby >= TILE_SIZE) {
+		if (suby > TILE_SIZE/2) {
 			suby -= TILE_SIZE;
 			SetY(Game_Map::RoundY(y + 1));
 		}
