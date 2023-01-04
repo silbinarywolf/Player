@@ -425,7 +425,6 @@ void Game_Player::Update() {
 		// Camera is currently janky, need to investigate properly into how it works.
 		hasPixelMovedThisTick = false;
 
-		// int pixelMoveSpeed = GetMoveSpeed() / 2;
 		int amount = 1 << (1 + GetMoveSpeed());
 		if (IsDirectionDiagonal(GetDirection())) {
 			// note(jae): 2022-01-04
