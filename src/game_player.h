@@ -179,6 +179,7 @@ private:
 	void UpdateEncounterSteps();
 	bool CheckActionEvent();
 	bool CheckEventTriggerHere(TriggerSet triggers, bool triggered_by_decision_key);
+	bool CheckEventTriggerInFront(TriggerSet triggers, bool triggered_by_decision_key);
 	bool CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool triggered_by_decision_key);
 	bool GetOnVehicle();
 	bool GetOffVehicle();

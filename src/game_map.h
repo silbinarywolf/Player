@@ -515,6 +515,9 @@ namespace Game_Map {
 	int XwithDirection(int x, int direction);
 	int YwithDirection(int y, int direction);
 
+	int XwithDiagonalDirection(int x, int direction);
+	int YwithDiagonalDirection(int y, int direction);
+
 	/**
 	 * Gets the map index from MapInfo vector using map ID.
 	 *

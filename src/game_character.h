@@ -883,7 +883,7 @@ protected:
 	lcf::rpg::SaveMapEventBase* data();
 	const lcf::rpg::SaveMapEventBase* data() const;
 
-	bool isMovingInPixelAllDir = false; // for pixel-movement, used by Game_Player only
+	bool hasPixelMovedThisTick = false; // for sub-tile / pixel movement, used by Game_Player only
 
 	int original_move_frequency = 2;
 	// contains if any movement (<= step_forward) of a forced move route was successful
@@ -1175,7 +1175,7 @@ inline void Game_Character::SetJumping(bool val) {
 }
 
 inline bool Game_Character::IsMoving() const {
-	return !IsJumping() && (isMovingInPixelAllDir || GetRemainingStep() > 0);
+	return !IsJumping() && GetRemainingStep() > 0;
 }
 
 inline bool Game_Character::IsStopping() const {

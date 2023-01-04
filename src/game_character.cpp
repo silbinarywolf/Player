@@ -213,7 +213,7 @@ void Game_Character::UpdateAnimation() {
 			|| GetStopCount() == 0
 			|| data()->anim_frame == lcf::rpg::EventPage::Frame_left || data()->anim_frame == lcf::rpg::EventPage::Frame_right
 			|| GetAnimCount() < stationary_limit - 1
-			|| isMovingInPixelAllDir) {
+			|| hasPixelMovedThisTick) {
 		IncAnimCount();
 	}
 

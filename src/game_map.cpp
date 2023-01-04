@@ -968,7 +968,7 @@ int Game_Map::RoundDy(int dy, int units) {
 	}
 }
 
-int Game_Map::XwithDirection(int x, int direction) {
+int Game_Map::XwithDiagonalDirection(int x, int direction) {
 	const int delta_lookup[8] = {
 		// These are used for default Rm2k/3 behaviour
 		0,  // Up
@@ -976,28 +976,36 @@ int Game_Map::XwithDirection(int x, int direction) {
 		0,  // Down
 		-1, // Left
 		// These are only used for Game_Player::MoveMode::Pixel8Directions behaviour
-		0, // 1,  // UpRight
-		0, // 1,  // DownRight
-		0, // -1, // DownLeft
-		0, // -1  // UpLeft
+		1,  // UpRight
+		1,  // DownRight
+		-1, // DownLeft
+		-1, // UpLeft
 	};
 	return RoundX(x + delta_lookup[direction]);
 }
 
-int Game_Map::YwithDirection(int y, int direction) {
+int Game_Map::YwithDiagonalDirection(int x, int direction) {
 	const int delta_lookup[8] = {
 		// These are used for default Rm2k/3 behaviour
-		-1, // Up
-		0,  // Right
-		1,  // Down
-		0,  // Left
+		0,  // Up
+		1,  // Right
+		0,  // Down
+		-1, // Left
 		// These are only used for Game_Player::MoveMode::Pixel8Directions behaviour
-		0, // -1, // UpRight
-		0, // 1,  // DownRight
-		0, // 1,  // DownLeft
-		0, // -1  // UpLeft
+		1, // 1,  // UpRight
+		1, // 1,  // DownRight
+		-1, // -1, // DownLeft
+		-1, // -1  // UpLeft
 	};
-	return RoundY(y + delta_lookup[direction]);
+	return RoundX(x + delta_lookup[direction]);
+}
+
+int Game_Map::XwithDirection(int x, int direction) {
+	return RoundX(x + (direction == lcf::rpg::EventPage::Direction_right ? 1 : direction == lcf::rpg::EventPage::Direction_left ? -1 : 0));
+}
+
+int Game_Map::YwithDirection(int y, int direction) {
+	return RoundY(y + (direction == lcf::rpg::EventPage::Direction_down ? 1 : direction == lcf::rpg::EventPage::Direction_up ? -1 : 0));
 }
 
 int Game_Map::CheckEvent(int x, int y) {

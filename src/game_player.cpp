@@ -374,9 +374,7 @@ void Game_Player::UpdateNextMovementAction() {
 		Move(move_dir);
 		ResetThrough();
 		if (IsStopping()) {
-			int front_x = Game_Map::XwithDirection(GetX(), GetDirection());
-			int front_y = Game_Map::YwithDirection(GetY(), GetDirection());
-			CheckEventTriggerThere({lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision}, front_x, front_y, false);
+			CheckEventTriggerInFront({lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision}, false);
 		}
 	}
 
@@ -419,17 +417,17 @@ int Game_Player::GetScreenY(bool apply_shift, bool apply_jump) const {
 
 void Game_Player::Update() {
 	Game_Character::Update();
-	if (isMovingInPixelAllDir) {
+	if (hasPixelMovedThisTick) {
 		// note(jae): 2022-12-29
 		// Hack to move the camera and possibly call CheckEventTriggerHere.
 		// Likely needs adjustment/work.
 		//
 		// Camera is currently janky, likely due to "amount" not mapping to
 		// how far the player is actually moving.
-		isMovingInPixelAllDir = false;
+		hasPixelMovedThisTick = false;
 
-		int pixelMoveSpeed = GetMoveSpeed() / 2;
-		int amount = 1 << (1 + pixelMoveSpeed);
+		// int pixelMoveSpeed = GetMoveSpeed() / 2;
+		int amount = 1 << (1 + GetMoveSpeed());
 		UpdateScroll(amount, IsJumping());
 
 		if (!IsMoveRouteOverwritten()) {
@@ -480,13 +478,15 @@ bool Game_Player::CheckActionEvent() {
 	}
 
 	bool result = false;
-	int front_x = Game_Map::XwithDirection(GetX(), GetDirection());
-	int front_y = Game_Map::YwithDirection(GetY(), GetDirection());
 
-	result |= CheckEventTriggerThere({lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision}, front_x, front_y, true);
+	result |= CheckEventTriggerInFront({lcf::rpg::EventPage::Trigger_touched, lcf::rpg::EventPage::Trigger_collision}, true);
 	result |= CheckEventTriggerHere({lcf::rpg::EventPage::Trigger_action}, true);
 
 	// Counter tile loop stops only if you talk to an action event.
+	// todo(jae): 2022-01-04
+	// Update counter tiles to work with MoveMode::Pixel8Directions
+	int front_x = Game_Map::XwithDirection(GetX(), GetDirection());
+	int front_y = Game_Map::YwithDirection(GetY(), GetDirection());
 	bool got_action = CheckEventTriggerThere({lcf::rpg::EventPage::Trigger_action}, front_x, front_y, true);
 	// RPG_RT allows maximum of 3 counter tiles
 	for (int i = 0; !got_action && i < 3; ++i) {
@@ -503,14 +503,13 @@ bool Game_Player::CheckActionEvent() {
 }
 
 bool Game_Player::CheckEventTriggerHere(TriggerSet triggers, bool triggered_by_decision_key) {
-	return CheckEventTriggerThere(triggers, GetX(), GetY(), triggered_by_decision_key);
-}
-
-bool Game_Player::CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool triggered_by_decision_key) {
 	if (InAirship()) {
 		return false;
 	}
-	// Hold secondary X and Y position for MoveMode::Pixel8Directions
+	const int x = GetX();
+	const int y = GetY();
+	// note(jae): 2022-01-04
+	// x2 and y2 only matter for MoveMode::Pixel8Directions
 	const int x2 = x + Utils::Signum(subx);
 	const int y2 = y + Utils::Signum(suby);
 
@@ -520,6 +519,82 @@ bool Game_Player::CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool
 		if (ev.IsActive()
 				&& (ev.GetX() == x || ev.GetX() == x2)
 				&& (ev.GetY() == y || ev.GetY() == y2)
+				&& ev.GetLayer() == lcf::rpg::EventPage::Layers_same
+				&& trigger >= 0
+				&& triggers[trigger]) {
+			SetEncounterCalling(false);
+			result |= ev.ScheduleForegroundExecution(triggered_by_decision_key, true);
+		}
+	}
+
+	return result;
+}
+
+bool Game_Player::CheckEventTriggerInFront(TriggerSet triggers, bool triggered_by_decision_key) {
+	if (InAirship()) {
+		return false;
+	}
+
+	bool result = false;
+	switch (moveMode) {
+	case MoveMode::Default: {
+		const int x = Game_Map::XwithDirection(GetX(), GetDirection());
+		const int y = Game_Map::YwithDirection(GetY(), GetDirection());
+		for (auto& ev : Game_Map::GetEvents()) {
+			const auto trigger = ev.GetTrigger();
+			if (ev.IsActive()
+					&& ev.GetX() == x
+					&& ev.GetY() == y
+					&& ev.GetLayer() == lcf::rpg::EventPage::Layers_same
+					&& trigger >= 0
+					&& triggers[trigger]) {
+				SetEncounterCalling(false);
+				result |= ev.ScheduleForegroundExecution(triggered_by_decision_key, true);
+			}
+		}
+		break;
+	}
+	case MoveMode::Pixel8Directions: {
+		// todo(jae): 2022-01-04
+		// I think we need a better solution here that checks 3 tiles instead of just 1 diagonally.
+		// This will be especially helpful for handling counter tiles.
+		// ie. up, up-right, right if you're facing up-right
+		const int x = Game_Map::XwithDiagonalDirection(GetX(), GetDirection());
+		const int y = Game_Map::YwithDiagonalDirection(GetY(), GetDirection());
+		const int x2 = x + Utils::Signum(subx);
+		const int y2 = y + Utils::Signum(suby);
+		for (auto& ev : Game_Map::GetEvents()) {
+			const auto trigger = ev.GetTrigger();
+			if (ev.IsActive()
+					&& (ev.GetX() == x || ev.GetX() == x2)
+					&& (ev.GetY() == y || ev.GetY() == y2)
+					&& ev.GetLayer() == lcf::rpg::EventPage::Layers_same
+					&& trigger >= 0
+					&& triggers[trigger]) {
+				SetEncounterCalling(false);
+				result |= ev.ScheduleForegroundExecution(triggered_by_decision_key, true);
+			}
+		}
+		break;
+	}
+	default:
+		Output::Warning("Player MoveMode: Invalid mode move {}", static_cast<int>(moveMode));
+		assert(false);
+		break;
+	}
+	return result;
+}
+
+bool Game_Player::CheckEventTriggerThere(TriggerSet triggers, int x, int y, bool triggered_by_decision_key) {
+	if (InAirship()) {
+		return false;
+	}
+	bool result = false;
+	for (auto& ev : Game_Map::GetEvents()) {
+		const auto trigger = ev.GetTrigger();
+		if (ev.IsActive()
+				&& ev.GetX() == x
+				&& ev.GetY() == y
 				&& ev.GetLayer() == lcf::rpg::EventPage::Layers_same
 				&& trigger >= 0
 				&& triggers[trigger]) {
@@ -562,8 +637,8 @@ bool Game_Player::GetOnVehicle() {
 
 	if (vehicle->IsInPosition(GetX(), GetY()) && IsStopping() && vehicle->IsStopping()) {
 		// note(jae): 2022-01-02
-		// Might be worth making the player move into
-		// the tile and then trigger that they've finished boarding.
+		// Might be worth making the player move into the tile and then trigger that
+		// they've finished boarding.
 		if (moveMode == MoveMode::Pixel8Directions) {
 			subx = suby = 0;
 		}
@@ -593,19 +668,24 @@ bool Game_Player::GetOnVehicle() {
 			return false;
 		}
 
+		// note(jae): 2022-01-02
+		// Might be worth making the player move into the tile and then trigger that
+		// they've finished boarding.
+		if (moveMode == MoveMode::Pixel8Directions) {
+			subx = suby = 0;
+		}
+
+		const auto prevMoveMode = moveMode;
+		moveMode = MoveMode::Default;
 		SetThrough(true);
 		Move(GetDirection());
 		// FIXME: RPG_RT resets through to move_route_through || not visible?
 		ResetThrough();
+		moveMode = prevMoveMode;
 
 		data()->vehicle = vehicle->GetVehicleType();
 		data()->preboard_move_speed = GetMoveSpeed();
 		data()->boarding = true;
-
-		// todo(jae): 2022-01-02
-		// Properly handle boarding of boats.
-		// Can't simply do a subx/suby reset
-		// subx = suby = 0;
 	}
 
 	Main_Data::game_system->SetBeforeVehicleMusic(Main_Data::game_system->GetCurrentBGM());
@@ -1170,7 +1250,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			subx -= TILE_SIZE;
 			SetX(Game_Map::RoundX(x + 1));
 		}
-		isMovingInPixelAllDir = true;
+		hasPixelMovedThisTick = true;
 	}
 	if (move_success_y > 0 && move_success_y == move_success_y_total) {
 		suby += dy_sub;
@@ -1182,7 +1262,7 @@ void Game_Player::MovePixelAllDirections(int dir) {
 			suby -= TILE_SIZE;
 			SetY(Game_Map::RoundY(y + 1));
 		}
-		isMovingInPixelAllDir = true;
+		hasPixelMovedThisTick = true;
 	}
 }
 
