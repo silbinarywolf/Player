@@ -88,6 +88,8 @@
 #include "exe_reader.h"
 #endif
 
+#include "net_server.h"
+
 using namespace std::chrono_literals;
 
 namespace Player {
@@ -137,6 +139,8 @@ namespace {
 	FileRequestBinding save_request_id;
 	FileRequestBinding map_request_id;
 }
+
+static double net_time = 0.0f;
 
 void Player::Init(std::vector<std::string> arguments) {
 	frames = 0;
@@ -205,6 +209,10 @@ void Player::Run() {
 
 	Game_Clock::ResetFrame(Game_Clock::now());
 
+	if (!net_server_init(0.0f)) {
+		return;
+	}
+
 	// Main loop
 	// libretro invokes the MainLoop through a retro_run-callback
 #ifndef USE_LIBRETRO
@@ -218,12 +226,15 @@ void Player::MainLoop() {
 	Instrumentation::FrameScope iframe;
 
 	const auto frame_time = Game_Clock::now();
-	Game_Clock::OnNextFrame(frame_time);
+	const auto dt = Game_Clock::OnNextFrame(frame_time);
+	net_time += std::chrono::duration<double>(dt).count();
 
 	Player::UpdateInput();
 
 	int num_updates = 0;
 	while (Game_Clock::NextGameTimeStep()) {
+		net_server_update(net_time);
+
 		if (num_updates > 0) {
 			Player::UpdateInput();
 		}
@@ -379,6 +390,7 @@ int Player::GetFrames() {
 }
 
 void Player::Exit() {
+	net_server_shutdown();
 	Graphics::UpdateSceneCallback();
 #ifdef EMSCRIPTEN
 	BitmapRef surface = DisplayUi->GetDisplaySurface();

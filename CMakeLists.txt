@@ -437,6 +437,12 @@ add_library(${PROJECT_NAME} STATIC
 	src/window_varlist.cpp
 	src/window_varlist.h
 	src/external/rang.hpp
+
+	# MMO-Fork only files
+	src/netcode.cpp
+	src/netcode.h
+	src/net_server.cpp
+	src/net_server.h
 )
 
 # These are actually unused when building in CMake
@@ -797,6 +803,11 @@ target_link_libraries(${PROJECT_NAME} PIXMAN::PIXMAN)
 
 find_package(fmt REQUIRED)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
+
+# MMO-Fork required libraries
+# set(sodium_USE_STATIC_LIBS ON)
+find_package(sodium REQUIRED)
+target_link_libraries(${PROJECT_NAME} sodium)
 
 # Always enable Wine registry support on non-Windows, but not for console ports
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT ${PLAYER_TARGET_PLATFORM} MATCHES "^(psvita|3ds|switch|wii)$")

@@ -144,3 +144,8 @@ eboot.bin
 *.pem
 *.keystore
 *.jks
+
+## mmo-fork
+/.vs
+/.vscode
+/buildscripts
