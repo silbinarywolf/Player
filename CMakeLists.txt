@@ -438,9 +438,11 @@ add_library(${PROJECT_NAME} STATIC
 	src/window_varlist.h
 	src/external/rang.hpp
 
-	# MMO-Fork only files
+	# Netcode only files
 	src/netcode.cpp
 	src/netcode.h
+	src/net_client.cpp
+	src/net_client.h
 	src/net_server.cpp
 	src/net_server.h
 )

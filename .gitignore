@@ -149,3 +149,4 @@ eboot.bin
 /.vs
 /.vscode
 /buildscripts
+/projects

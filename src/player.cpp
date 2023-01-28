@@ -89,6 +89,7 @@
 #endif
 
 #include "net_server.h"
+#include "net_client.h"
 
 using namespace std::chrono_literals;
 
@@ -126,6 +127,11 @@ namespace Player {
 	int speed_modifier = 3;
 	int speed_modifier_plus = 10;
 	Game_ConfigPlayer player_config;
+
+	// Netcode
+	bool is_server; // --server flag
+
+	Net_Interface* net;
 #ifdef EMSCRIPTEN
 	std::string emscripten_game_name;
 #endif
@@ -209,7 +215,12 @@ void Player::Run() {
 
 	Game_Clock::ResetFrame(Game_Clock::now());
 
-	if (!net_server_init(0.0f)) {
+	if (is_server) {
+		net = new Net_Server();
+	} else {
+		net = new Net_Client();
+	}
+	if (!net->Init(0.0f)) {
 		return;
 	}
 
@@ -233,7 +244,9 @@ void Player::MainLoop() {
 
 	int num_updates = 0;
 	while (Game_Clock::NextGameTimeStep()) {
-		net_server_update(net_time);
+		if (net != nullptr) {
+			net->Update(net_time);
+		}
 
 		if (num_updates > 0) {
 			Player::UpdateInput();
@@ -252,6 +265,11 @@ void Player::MainLoop() {
 	Player::Draw();
 
 	Scene::old_instances.clear();
+
+	if (net != nullptr && net->IsDisconnected()) {
+		Exit();
+		return;
+	}
 
 	if (!Transition::instance().IsActive() && Scene::instance->type == Scene::Null) {
 		Exit();
@@ -390,7 +408,10 @@ int Player::GetFrames() {
 }
 
 void Player::Exit() {
-	net_server_shutdown();
+	if (net != nullptr) {
+		net->Shutdown();
+		net = nullptr;
+	}
 	Graphics::UpdateSceneCallback();
 #ifdef EMSCRIPTEN
 	BitmapRef surface = DisplayUi->GetDisplaySurface();
@@ -485,6 +506,10 @@ Game_Config Player::ParseCommandLine(std::vector<std::string> arguments) {
 		if (cp.ParseNext(arg, 0, "window")) {
 			// Legacy RPG_RT argument - window
 			cfg.video.fullscreen.Set(false);
+			continue;
+		}
+		if (cp.ParseNext(arg, 0, "--server")) {
+			is_server = true;
 			continue;
 		}
 		if (cp.ParseNext(arg, 0, "--enable-mouse")) {

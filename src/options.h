@@ -48,7 +48,7 @@ const int MESSAGE_BOX_OFFSET_X = (SCREEN_TARGET_WIDTH - MENU_WIDTH) / 2;
  * Pause the game process when the player window
  * looses its focus.
  */
-#define PAUSE_GAME_WHEN_FOCUS_LOST 1
+#define PAUSE_GAME_WHEN_FOCUS_LOST 0 // note(jae): 2022-01-28: Changed to 0 as netcode sessions shouldnt pause the engine running
 
 /**
  * Pause the audio process when the player window
