@@ -27,6 +27,9 @@
 #include <vector>
 #include <memory>
 
+// Netcode
+#include "net_interface.h"
+
 /**
  * Player namespace.
  */
@@ -378,6 +381,14 @@ namespace Player {
 	 */
 	extern Game_ConfigPlayer player_config;
 
+	/**
+	 * The game networking handler for server or client.
+	 */
+	extern Net_Interface* net;
+
+	/** Get the netowrking handler for server or client */
+	Net_Interface* GetNet();
+
 #ifdef EMSCRIPTEN
 	/** Name of game emscripten uses */
 	extern std::string emscripten_game_name;
@@ -434,6 +445,13 @@ inline bool Player::IsPatchDynRpg() {
 
 inline bool Player::IsPatchManiac() {
 	return (patch & PatchManiac) == PatchManiac;
+}
+
+
+// Netcode functions
+
+inline Net_Interface* Player::GetNet() {
+	return net;
 }
 
 #endif

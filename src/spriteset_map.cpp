@@ -68,7 +68,17 @@ void Spriteset_Map::Refresh() {
 
 	CreateAirshipShadowSprite(need_x_clone, need_y_clone);
 
-	CreateSprite(Main_Data::game_player.get(), need_x_clone, need_y_clone);
+	switch (Player::GetNet()->Kind()) {
+		case NetKind::Offline:
+		case NetKind::Client:
+		case NetKind::ListenServer:
+			CreateSprite(Main_Data::game_player.get(), need_x_clone, need_y_clone);
+		break;
+
+		case NetKind::DedicatedServer:
+			// don't render default player for dedicated server
+		break;
+	}
 
 	for (bool& v: vehicle_loaded) {
 		v = false;

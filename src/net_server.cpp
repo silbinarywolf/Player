@@ -36,6 +36,7 @@ bool Net_Server::Init(double time) {
     for (int i = 0; i < NETCODE_MAX_PACKET_SIZE; ++i) {
         packet_data[i] = (uint8_t) i;
     }
+    mode = NetKind::DedicatedServer;
     return true;
 }
 
@@ -66,5 +67,6 @@ void Net_Server::Update(double time) {
 void Net_Server::Shutdown() {
    netcode_server_destroy(server);
    netcode_term();
+   mode = NetKind::Offline;
    server = nullptr;
 }

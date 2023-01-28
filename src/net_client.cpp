@@ -66,6 +66,7 @@ void Net_Client::Update(double time) {
     netcode_client_update(client, time);
 
     if (netcode_client_state(client) == NETCODE_CLIENT_STATE_CONNECTED) {
+        mode = NetKind::Client;
         netcode_client_send_packet(client, packet_data, NETCODE_MAX_PACKET_SIZE);
     }
 
@@ -91,5 +92,6 @@ void Net_Client::Update(double time) {
 void Net_Client::Shutdown() {
    netcode_client_destroy(client);
    netcode_term();
+   mode = NetKind::Offline;
    client = nullptr;
 }
